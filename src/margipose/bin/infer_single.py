@@ -55,13 +55,27 @@ def main(argv, common_opts):
 
     assert args.multicrop == False, 'TODO: Implement multi-crop for single image inference.'
 
-    model = load_model(args.model).to(device).eval()
+
+    try:
+        model = load_model(args.model).to(device).eval()
+        print("[INFO] to process on device is {}".format(device))
+    except AssertionError:
+        # assertion found NVIDIA driver
+        model = load_model(args.model).eval()
+
 
     input_specs: ImageSpecs = model.data_specs.input_specs
 
     image: PIL.Image.Image = PIL.Image.open(args.image, 'r')
     image.thumbnail((input_specs.width, input_specs.height))
-    inp = input_specs.convert(image).to(device, torch.float32)
+    
+    try:
+        inp = input_specs.convert(image).to(device, torch.float32)
+    except AssertionError:
+        # assertion found NVIDIA driver
+        inp = input_specs.convert(image).to(torch.float32)
+
+    
 
     output = model(inp[None, ...])[0]
 
