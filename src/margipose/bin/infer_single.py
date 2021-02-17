@@ -13,6 +13,7 @@ import argparse
 import PIL.Image
 import matplotlib.pylab as plt
 import torch
+import time
 from mpl_toolkits.mplot3d import Axes3D
 from pose3d_utils.coords import ensure_cartesian
 
@@ -76,8 +77,12 @@ def main(argv, common_opts):
         inp = input_specs.convert(image).to(torch.float32)
 
     
+    st_time = time.time()
+    output = model(inp[None, ...])
 
-    output = model(inp[None, ...])[0]
+    print("[INFO] inference time is {:.3f}s".format(time.time() - st_time))
+
+    output = output[0]
 
     norm_skel3d = ensure_cartesian(output.to(CPU, torch.float64), d=3)
 
@@ -88,7 +93,11 @@ def main(argv, common_opts):
     ax1.imshow(input_specs.unconvert(inp.to(CPU)))
     plot_skeleton_on_axes3d(norm_skel3d, CanonicalSkeletonDesc, ax2, invert=True)
 
-    plt.show()
+    output_name = "{}-margipose.png".format(".".join(args.image.split(".")[:-1]))
+
+    fig.savefig(output_name, dpi=fig.dpi)
+
+    print("[INFO] output image on {} ".format(output_name))
 
 
 Infer_Subcommand = Subcommand(name='infer', func=main, help='infer 3D pose for single image')
